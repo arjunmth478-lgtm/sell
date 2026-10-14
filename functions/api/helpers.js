@@ -1,0 +1,8 @@
+const enc = new TextEncoder();
+function b64url(bytes){return btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+async function sign(payload, secret){const key=await crypto.subtle.importKey('raw',enc.encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);const sig=await crypto.subtle.sign('HMAC',key,enc.encode(payload));return `${btoa(payload).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}.${b64url(sig)}`}
+export async function isAdmin(request,env){try{const token=request.headers.get('Cookie')?.split(';').map(x=>x.trim()).find(x=>x.startsWith('shopnix_admin='))?.split('=').slice(1).join('=');if(!token||!env.ADMIN_SESSION_SECRET)return false;const [p,s]=token.split('.');if(!p||!s)return false;const payload=atob(p.replace(/-/g,'+').replace(/_/g,'/'));const expected=await sign(payload,env.ADMIN_SESSION_SECRET);const sig=expected.split('.')[1];return sig===s&&JSON.parse(payload).exp>Date.now()}catch{return false}}
+export async function sessionCookie(env){const payload=JSON.stringify({exp:Date.now()+8*60*60*1000});const token=await sign(payload,env.ADMIN_SESSION_SECRET);return `shopnix_admin=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=28800`}
+export function json(data,status=200,headers={}){return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store',...headers}})}
+export async function body(request){try{return await request.json()}catch{return {}}}
+export function clean(v,max=300){return String(v??'').trim().slice(0,max)}

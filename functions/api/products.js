@@ -1,0 +1,2 @@
+import {json} from './helpers.js';
+export async function onRequestGet({env}){try{const {results=[]}=await env.DB.prepare('SELECT id,name,description,category,price_paise,image_url FROM products WHERE active=1 ORDER BY created_at DESC').all();const settings=await env.DB.prepare("SELECT key,value FROM settings WHERE key IN ('whatsapp_number','telegram_username')").all();return json({products:results,contacts:Object.fromEntries((settings.results||[]).map(x=>[x.key,x.value]))})}catch{return json({error:'Database is not configured. Follow README setup.'},500)}}

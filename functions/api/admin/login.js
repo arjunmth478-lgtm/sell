@@ -1,0 +1,2 @@
+import {json,body,sessionCookie} from '../helpers.js';
+export async function onRequestPost({request,env}){const data=await body(request);if(!env.ADMIN_PASSWORD||!env.ADMIN_SESSION_SECRET)return json({error:'Admin secrets are not configured.'},500);if(typeof data.password!=='string'||data.password!==env.ADMIN_PASSWORD)return json({error:'Incorrect password.'},401);return json({ok:true},200,{'Set-Cookie':await sessionCookie(env)})}
